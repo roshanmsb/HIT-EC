@@ -132,7 +132,7 @@ model = Model(config, output_dims=output_dims)
 
 CKPT_PATH = './GitHub_HIT-EC/model.ckpt'
 ckpt = torch.load(CKPT_PATH, map_location="cpu")
-state = ckpt.get("state_dict", ckpt)
+state = ckpt['callbacks']['StochasticWeightAveraging']['average_model_state']
 ik = model.load_state_dict(state, strict=False)
 
 print(f"[InterOnly] Loaded from {CKPT_PATH}")
