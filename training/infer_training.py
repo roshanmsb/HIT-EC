@@ -103,7 +103,7 @@ config = {
     'ah': 2,
     'dr': 0.1,
     'beta': 0.59,
-    'lr': 8.75e-6,
+    'lr': 8.75e-5,
     'observed_loss': 0.96,
     'alpha': 0.93,
     'dimension': 1024,
