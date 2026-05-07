@@ -12,8 +12,10 @@ from tqdm import tqdm
 
 from .results import (
     choose_f1_thresholds,
+    compact_evaluation_summary,
     compute_care_metrics,
     compute_hitec_metrics,
+    compute_supplemental_classification_metrics,
     compute_supplemental_ranking_metrics,
     sigmoid,
     write_care_ranked_csv,
@@ -206,6 +208,7 @@ def external_care_path(care_results_root, metadata, seed, eval_split):
 
 def evaluate_arrays(arrays, thresholds, metadata, vocab, result_root, split_name, seed, rank_limit, care_results_root):
     probs = sigmoid(arrays["logits"])
+    predictions = (probs >= thresholds.reshape(1, -1)).astype(np.int32)
     hitec_metrics = compute_hitec_metrics(
         arrays["logits"],
         arrays["targets"],
@@ -239,7 +242,14 @@ def evaluate_arrays(arrays, thresholds, metadata, vocab, result_root, split_name
         "seed": int(seed),
         "hitec": hitec_metrics,
         "care_task1": compute_care_metrics(care_df),
-        "supplemental": compute_supplemental_ranking_metrics(care_df),
+        "supplemental": {
+            "classification": compute_supplemental_classification_metrics(
+                arrays["targets"],
+                predictions,
+                arrays["masks"],
+            ),
+            "ranking": compute_supplemental_ranking_metrics(care_df),
+        },
         "artifacts": {
             "care_ranked_csv": str(care_csv),
             "external_care_ranked_csv": str(external_csv) if external_csv else None,
@@ -302,12 +312,14 @@ def main():
             )
         )
 
-    summary = {
-        "checkpoint": str(checkpoint),
-        "thresholds": threshold_metadata,
-        "metrics": metrics,
-    }
-    write_json(result_root / "evaluation_summary.json", summary)
+    write_json(
+        result_root / "evaluation_summary.json",
+        compact_evaluation_summary(
+            metrics,
+            checkpoint=str(checkpoint),
+            thresholds=threshold_metadata,
+        ),
+    )
     print("[emulator_bench] evaluation summary: {}".format(result_root / "evaluation_summary.json"), flush=True)
 
 
